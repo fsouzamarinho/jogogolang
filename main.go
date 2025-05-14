@@ -29,6 +29,7 @@ type Game struct {
 	playerImg        *ebiten.Image
 	enemies          []Enemy
 	frameCount       int
+	gameOver bool
 }
 
 func loadImage(path string) *ebiten.Image {
@@ -40,6 +41,10 @@ func loadImage(path string) *ebiten.Image {
 }
 
 func (g *Game) Update() error {
+
+	if g.gameOver {
+	return nil // trava o jogo ao colidir
+	}
 	// Movimento do jogador
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) && g.playerX > 0 {
 		g.playerX -= playerSpeed
@@ -81,6 +86,12 @@ func (g *Game) Update() error {
 	}
 	g.enemies = activeEnemies
 
+	for _, e := range g.enemies {
+	if checkCollision(g.playerX, g.playerY, e.X, e.Y) {
+		g.gameOver = true
+	}
+}
+
 	return nil
 }
 
@@ -96,10 +107,21 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for _, e := range g.enemies {
 		ebitenutil.DrawRect(screen, e.X, e.Y, enemySize, enemySize, image.White)
 	}
+
+	if g.gameOver {
+	ebitenutil.DebugPrintAt(screen, "GAME OVER", screenWidth/2-40, screenHeight/2)
+}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
+}
+
+func checkCollision(px, py float64, ex, ey float64) bool {
+	return px < ex+enemySize &&
+		px+playerWidth > ex &&
+		py < ey+enemySize &&
+		py+playerHeight > ey
 }
 
 func main() {
