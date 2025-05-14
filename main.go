@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"time"
+	"fmt"
 )
 
 const (
@@ -29,7 +30,18 @@ type Game struct {
 	playerImg        *ebiten.Image
 	enemies          []Enemy
 	frameCount       int
-	gameOver bool
+	gameOver         bool
+	startTime        time.Time
+	score            float64
+}
+
+func (g *Game) restart() {
+	g.playerX = screenWidth / 2
+	g.playerY = screenHeight - playerHeight - 10
+	g.enemies = []Enemy{}
+	g.startTime = time.Now()
+	g.score = 0
+	g.gameOver = false
 }
 
 func loadImage(path string) *ebiten.Image {
@@ -43,8 +55,13 @@ func loadImage(path string) *ebiten.Image {
 func (g *Game) Update() error {
 
 	if g.gameOver {
-	return nil // trava o jogo ao colidir
-	}
+    if ebiten.IsKeyPressed(ebiten.KeyR) {
+        g.restart()
+    }
+    return nil
+}
+	g.score = time.Since(g.startTime).Seconds()
+
 	// Movimento do jogador
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) && g.playerX > 0 {
 		g.playerX -= playerSpeed
@@ -87,16 +104,17 @@ func (g *Game) Update() error {
 	g.enemies = activeEnemies
 
 	for _, e := range g.enemies {
-	if checkCollision(g.playerX, g.playerY, e.X, e.Y) {
-		g.gameOver = true
+		if checkCollision(g.playerX, g.playerY, e.X, e.Y) {
+			g.gameOver = true
+		}
 	}
-}
 
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(image.Black)
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("Tempo: %.1fs", g.score))
 
 	// Desenha jogador
 	op := &ebiten.DrawImageOptions{}
@@ -109,8 +127,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	if g.gameOver {
-	ebitenutil.DebugPrintAt(screen, "GAME OVER", screenWidth/2-40, screenHeight/2)
-}
+		 ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Pontuação final: %.1fs", g.score), screenWidth/2-70, screenHeight/2+20)
+    ebitenutil.DebugPrintAt(screen, "Pressione R para reiniciar", screenWidth/2-90, screenHeight/2+40)
+		ebitenutil.DebugPrintAt(screen, "GAME OVER", screenWidth/2-40, screenHeight/2)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -125,6 +145,7 @@ func checkCollision(px, py float64, ex, ey float64) bool {
 }
 
 func main() {
+
 	rand.Seed(time.Now().UnixNano())
 
 	game := &Game{
@@ -133,6 +154,7 @@ func main() {
 		playerImg:  loadImage("player.png"),
 		enemies:    []Enemy{},
 		frameCount: 0,
+		startTime:  time.Now(),
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
